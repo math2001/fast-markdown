@@ -1,0 +1,48 @@
+[
+	{
+		"args":
+		{
+			"extend": true,
+			"to": "bol"
+		},
+		"command": "move_to"
+	},
+	{
+		"args":
+		{
+			"by": "characters",
+			"forward": true
+		},
+		"command": "move"
+	},
+	{
+		"args":
+		{
+			"file": "res://Packages/Default/Delete Line.sublime-macro"
+		},
+		"command": "run_macro_file"
+	},
+	{
+		"args":
+		{
+			"by": "lines",
+			"forward": false
+		},
+		"command": "move"
+	},
+	{
+		"args":
+		{
+			"extend": false,
+			"to": "eol"
+		},
+		"command": "move_to"
+	},
+	{
+		"args": {
+			"command": "reorder_list",
+		},
+		"command": "markdown_keyboard_run"
+	}
+	
+]
