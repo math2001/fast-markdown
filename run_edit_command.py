@@ -1,7 +1,6 @@
 import sublime
 import sublime_plugin
 
-
 class RunEditCommandCommand(sublime_plugin.TextCommand):
     def run(self, edit, command, arguments=[], **kwargs):
         """
@@ -33,5 +32,8 @@ class EditInsertCommand(sublime_plugin.TextCommand):
 
 class MessageDialogCommand(sublime_plugin.WindowCommand):
 
-    def run(self, text):
-        return sublime.message_dialog(text)
+    def run(self, **kwargs):
+        msg = kwargs.get('msg', None) or kwargs.get('text', None)
+        if msg is None:
+            return sublime.message_dialog("[no 'msg' or 'text']")
+        return sublime.message_dialog(msg)

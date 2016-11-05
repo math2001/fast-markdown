@@ -1,1 +1,5 @@
 sample.md
+test.py
+*.pyc
+*.sublime-project
+*.sublime-workspace

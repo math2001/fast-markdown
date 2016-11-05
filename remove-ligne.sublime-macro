@@ -40,9 +40,9 @@
 	},
 	{
 		"args": {
-			"command": "reorder_list",
+			"action": "reorder_list",
 		},
-		"command": "markdown_keyboard_run"
+		"command": "fast_markdown"
 	}
 	
 ]

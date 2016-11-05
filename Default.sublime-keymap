@@ -3,7 +3,7 @@
     // Bold and italic (*)
     //
     // insert to *|* where `|` is the selection (or the cursor)
-   {
+    {
         "keys": ["*"],
         "command": "insert_snippet",
         "args": {
@@ -16,50 +16,52 @@
               "match_all": true,
               "key": "selector"
             },
+            {
+                "key": "selection_empty",
+                "operator": "equal",
+                "operand": false
+            }
         ]
-    }
+    }, 
     // move the cursor forward
-    , { "keys": ["*"], "command": "move", "args": { "by": "characters", "forward": true }, "context":
+    { "keys": ["*"], "command": "move", "args": { "by": "characters", "forward": true }, "context":
         [
-            { "key": "selector", "operator": "equal", "operand": "text.html.markdown" }
-            , { "key": "following_text", "operator": "regex_contains", "operand": "^\\*" }
+            { "key": "selector", "operator": "equal", "operand": "text.html.markdown" },
+            { "key": "selector", "operator": "equal", "operand": "markup.bold.markdown, markup.italic.markdown" },
+            { "key": "following_text", "operator": "regex_contains", "operand": "^\\*" }
         ]
-    }
+    }, 
+    { "keys": ["*"], "command": "insert_snippet", "args": { "contents": "*" }, "context":
+        [
+            { "key": "following_text", "operator": "regex_contains", "operand": "^\\*" },
+            { "key": "preceding_text", "operator": "regex_contains", "operand": "[\\\\ ]$" },
+            { "key": "selector", "operator": "equal", "operand": "text.html.markdown" },
+        ]
+    }, 
     // add two ** when inside **: *|* -> **|**
-    , { "keys": ["*"], "command": "insert_snippet", "args": { "contents": "*$0*" }, "context":
+    { "keys": ["*"], "command": "insert_snippet", "args": { "contents": "*$0*" }, "context":
         [
-            { "key": "selector", "operator": "equal", "operand": "text.html.markdown" }
-            , { "key": "following_text", "operator": "regex_contains", "operand": "^\\*" }
-            , { "key": "preceding_text", "operator": "regex_contains", "operand": "^\\*$" }
+            { "key": "selector", "operator": "equal", "operand": "text.html.markdown" },
+            { "key": "selector", "operator": "not_equal", "operand": "markup.bold.markdown, markup.italic.markdown" },
+            { "key": "selection_empty", "operator": "equal", "operand": true },
+            // { "key": "preceding_text", "operator": "not_regex_contains", "operand": "\\s$" }
         ]
-    }
-    , { "keys": ["*"], "command": "insert_snippet", "args": { "contents": "*$0*" }, "context":
-        [
-            { "key": "selector", "operator": "equal", "operand": "text.html.markdown" }
-            , { "key": "following_text", "operator": "regex_contains", "operand": "^\\*" }
-            , { "key": "preceding_text", "operator": "regex_contains", "operand": "\\s\\*$" }
-        ]
-    }
+    }, 
     // delete left right: *|* -> |
-    , { "keys": ["backspace"], "command": "run_macro_file", "args": { "file": "res://Packages/Default/Delete Left Right.sublime-macro"},
+    { "keys": ["backspace"], "command": "run_macro_file", "args": { "file": "res://Packages/Default/Delete Left Right.sublime-macro"},
         "context": [
             { "key": "selector", "operator": "equal", "operand": "text.html.markdown" }
             , { "key": "following_text", "operator": "regex_contains", "operand": "^\\*" }
             , { "key": "preceding_text", "operator": "regex_contains", "operand": "\\*$" }
         ]
-    }
+    }, 
 
     //
     // lists
     //
 
-    , {
-        "keys": ["enter"],
-        "command": "markdown_keyboard_run",
-        "args": {
-            "command": "list"
-        },
-        "context": [
+    { "keys": ["enter"], "command": "fast_markdown", "args": { "action": "list" }, "context": 
+        [
             {
                 "key": "selector",
                 "match_all": true,
@@ -83,19 +85,9 @@
                 "operand": "^$"
             },
         ]
-    }
-
-    , {
-        "keys": ["backspace"],
-        "command": "run_macro_file",
-        "args": {
-            "file": "res://Packages/md-keyboard/remove-ligne.sublime-macro"
-        },
-        // "command": "markdown_keyboard_run",
-        // "args": {
-        //     "command": "remove_list_element"
-        // },
-        "context": [
+    }, 
+    { "keys": ["backspace"], "command": "run_macro_file", "args": { "file": "res://Packages/fast-markdown/remove-ligne.sublime-macro" }, "context": 
+        [
             {
                 "key": "selector",
                 "operator": "equal",
@@ -115,39 +107,19 @@
             , {
                 "key": "preceding_text",
                 "operator": "regex_contains",
-                "operand": "([\\-\\+\\*>]|[0-9]+\\.) $",
+                "operand": "^\\s*([\\-\\+\\*>]|[0-9]+\\.) ?$",
                 "match_all": true
             }
         ]
-    }
-
-    , {
-        "keys": ["f3"],
-        "command": "message_dialog",
-        "args": {
-            "text": "running"
-        },
-        "context": [
+    }, 
+    { "keys": ["f3"], "command": "fast_markdown", "args": { "action": "reorder_list" }, "context": 
+        [
             {
-                "key": "preceding_text",
-                "operator": "regex_match",
-                "operand": "^$"
-            },
-            {
-                "key": "following_text",
-                "operator": "regex_match",
-                "operand": "^$"
-            },
+                "key": "selector",
+                "operator": "equal",
+                "operand": "meta.paragraph.list.markdown"
+            }
         ]
     },
-
-    {
-        "keys": ["f8"],
-        "command": "markdown_keyboard_run",
-        "args": {
-            "command": "reorder_list"
-        },
-    }
-
 
 ]
