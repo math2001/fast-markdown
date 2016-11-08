@@ -6,6 +6,18 @@ It auto insert prefixes in lists (`-`, `*`, `n.`). (reorganize automatically the
 
 It also helps with italics and bold (only working with `*` for now).
 
+## A quick example
+
+![a quick example of fast markdown.](fast-markdown.gif)
+
+Sorry for the quality... :confused:
+
+## Usage
+
+The only thing you need to know is that when you want to insert an unordered nested list, just add at the end the line `- `. The `-` can be `+` or `*`. And if you want to insert an ordered list, add a `# `.
+
+Otherwise, everything is just natural. :smirk:
+
 ## Install
 
 For now, **Fast Markdown** is not available on Package Control, so you're going to install it manually.
@@ -30,3 +42,5 @@ git clone "https://github.com/math2001/fast-markdown"
 
 Done!
 ```
+
+

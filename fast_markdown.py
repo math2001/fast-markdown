@@ -110,7 +110,7 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
                         list_prefix = str(int(list_prefix) + 1) + '.'
                     replace(self.view, line.region, '{}{} '.format('\t' * (line.indentation - 1), list_prefix))
 
-            elif line.text[-1] in self.unordered_sign + self.ordered_sign:
+            elif line.text[-1] in self.unordered_sign + self.ordered_sign and line.text[-2] == ' ':
                 # insert a sub-list
                 if line.text[-1] in self.ordered_sign:
                     sign = '1.'

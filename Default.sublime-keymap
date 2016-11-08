@@ -20,6 +20,11 @@
                 "key": "selection_empty",
                 "operator": "equal",
                 "operand": false
+            },
+            {
+                "key": "selector",
+                "operator": "not_equal",
+                "operand": "markup.bold.markdown"
             }
         ]
     }, 
@@ -29,6 +34,15 @@
             { "key": "selector", "operator": "equal", "operand": "text.html.markdown" },
             { "key": "selector", "operator": "equal", "operand": "markup.bold.markdown, markup.italic.markdown" },
             { "key": "following_text", "operator": "regex_contains", "operand": "^\\*" }
+        ]
+    }, 
+    // move the cursor forward too.
+    { "keys": ["*"], "command": "move", "args": { "by": "characters", "forward": true }, "context":
+        [
+            { "key": "selector", "operator": "equal", "operand": "text.html.markdown" },
+            { "key": "selector", "operator": "equal", "operand": "markup.bold.markdown" },
+            { "key": "selection_empty", "match_all": true, "operator": "equal", "operand": false }
+
         ]
     }, 
     { "keys": ["*"], "command": "insert_snippet", "args": { "contents": "*" }, "context":
