@@ -80,7 +80,7 @@
                 "key": "selector",
                 "match_all": true,
                 "operator": "equal",
-                "operand": "markup.list, markup.quote.markdown"
+                "operand": "markup.list"
             }
             , {
                 "key": "selector",
@@ -105,7 +105,7 @@
             {
                 "key": "selector",
                 "operator": "equal",
-                "operand": "markup.list, markup.quote.markdown"
+                "operand": "markup.list"
             }
             , {
                 "key": "selection_empty",
