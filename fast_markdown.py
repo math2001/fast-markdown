@@ -106,7 +106,7 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
                     replace(self.view, line.region, '\n')
                 else:
                     list_prefix = self.get_sign_for(line.indentation, line.region.end())
-                    if list_prefix.isdigit(): 
+                    if list_prefix.isdigit():
                         list_prefix = str(int(list_prefix) + 1) + '.'
                     replace(self.view, line.region, '{}{} '.format('\t' * (line.indentation - 1), list_prefix))
 
@@ -151,7 +151,7 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
             1. x1
             8. x2
             5. x3
-            
+
             to
 
             1. x1
@@ -171,9 +171,10 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
 
         def replace_line(indentations, line):
             indentations[line.indentation] += 1
+            print(indentations[line.indentation], line.text)
             line.text = '{}{}.{}'.format(
                 '\t' * line.indentation,
-                indentations[line.indentation], 
+                indentations[line.indentation],
                 line.text.split('.', 1)[1]
             )
             replace(self.view, line.region, line.text)
@@ -211,7 +212,7 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
             text = self.view.substr(sublime.Region(0, self.view.size()))
         settings = self.view.settings()
         if settings.get('translate_tabs_to_spaces', False) is not True:
-            return 
+            return text
         text = text.replace(' ' * settings.get('tab_size'), '\t')
         return text
 
@@ -236,4 +237,3 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
             return sublime.error_message("The action '{}' is unknown.".format(action))
 
         action_to_run()
-
