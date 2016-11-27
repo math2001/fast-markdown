@@ -42,5 +42,3 @@ git clone "https://github.com/math2001/fast-markdown"
 
 Done!
 ```
-
-

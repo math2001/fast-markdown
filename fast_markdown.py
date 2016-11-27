@@ -3,8 +3,9 @@ import sublime_plugin
 import re
 import sys
 
-class StdClass(object):
-    pass
+def StdClass(name='Unknown'):
+    return type(name.title(), (), {})
+
 
 def md(*msgs, **kwargs):
     sublime.message_dialog(kwargs.get('sep', ' ').join([str(msg) for msg in msgs]))
@@ -27,9 +28,30 @@ def insert(view, point, text):
         'text': text
     })
 
+def convert_indentation(settings, text):
+    if settings.get('translate_tabs_to_spaces', False) is not True:
+        return text
+    return text.replace(' ' * settings.get('tab_size'), '\t')
 
+def get_indentation(text):
+    indentation = 0
+    for char in text:
+        if char == '\t':
+            indentation += 1
+        else:
+            return indentation
+    return indentation
 
-class FastMarkdownCommand(sublime_plugin.TextCommand):
+def fix(text):
+    text = text.strip()
+    if text[0] in ['-', '*', '+']:
+        return text[0], text[1:]
+    elif text.split('.', 1)[0].isdigit():
+        return 1, text.split('.', 1)[1]
+    else:
+        raise ValueError('No suffix for the line {0!r}'.format(text))
+
+class FastMarkdownShitCommand(sublime_plugin.TextCommand):
 
 
     list_prefix = re.compile(r'[0-9\-\*\+]\.?$')
@@ -38,60 +60,7 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
     unordered_sign = ['*', '+', '-']
     ordered_sign = ['#']
 
-    def list_(self) -> None:
-
-        """ This function is called when enter is pressed in a list. """
-
-        def increment_line(line):
-            nb, line = line.split('.', 1)
-            return str(int(nb) + 1) + '.' + line
-
-        regions = self.view.sel()
-        for region in regions:
-            line = StdClass()
-            line.region = self.view.line(region)
-            line.text = self.view.substr(line.region)
-            char = line.text[0]
-            ordered_list = False
-
-            i = 0
-            while char in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] and i < 10:
-                i += 1
-                char = line.text[i]
-                ordered_list = True
-            if ordered_list is True:
-                char = str(int(line.text[0:i]) + 1) + '.'
-
-            sub_list_prefix = self.is_list_prefix.search(line.text)
-
-            line.text = self.convert_indentation(line.text)
-            # remove last list element because empty
-            if len(line.text.rstrip()) == len(char):
-                self.view.run_command('edit_replace', {
-                    'region': (line.region.a, line.region.b),
-                    'text': '\n'
-                })
-            elif sub_list_prefix:
-                sub_list_prefix = sub_list_prefix.group(0)
-                self.view.run_command('edit_replace', {
-                    "region": [line.region.end() - 1, line.region.end()],
-                    "text": '\n\t' + sub_list_prefix + ' '
-                })
-                # sub_list_prefix = ''
-            else:
-                if not ordered_list and char not in ['*', '-', '+']:
-                    return sublime.error_message("the char must be '*', '-' or '+'. Got {} instead".format(repr(char)))
-                # add list element
-                prefix = char + ' '
-                self.view.run_command('edit_insert', {
-                    "point": line.region.end(),
-                    "text": '\n' + prefix
-                })
-                self.reorder_list()
-                # self.view.selection.clear()
-                # self.view.selection.add(line.region.end())
-
-    def list(self) -> None:
+    def list(self):
 
         """ This function is called when enter is pressed in a list. """
         regions = self.view.sel()
@@ -142,8 +111,7 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
                 cont = False
                 return line.text.lstrip()[0]
 
-
-    def reorder_list(self) -> None:
+    def reorder_list(self):
 
         """
             Rename the prefixes.
@@ -171,7 +139,6 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
 
         def replace_line(indentations, line):
             indentations[line.indentation] += 1
-            print(indentations[line.indentation], line.text)
             line.text = '{}{}.{}'.format(
                 '\t' * line.indentation,
                 indentations[line.indentation],
@@ -193,12 +160,11 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
                 if line.region.empty():
                     continue
                 if line.indentation > prev_indentation:
-                    # print('reset', line.text)
                     indentations = reset_lower_indentation(indentations, line.indentation)
-                    # return print(indentations)
 
                 if indentations.get(line.indentation, None) is None:
                     indentations[line.indentation] = line.text.lstrip()[0]
+                    print(indentations[line.indentation])
                     if indentations[line.indentation].isdigit():
                         indentations[line.indentation] = 0
                         replace_line(indentations, line)
@@ -231,6 +197,61 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
         if not isinstance(action, str):
             return sublime.error_message('The action must be a string, not a {}'.format(action.__class__.__name__))
 
+        try:
+            action_to_run = getattr(self, action)
+        except AttributeError:
+            return sublime.error_message("The action '{}' is unknown.".format(action))
+
+        action_to_run()
+
+class FastMarkdownCommand(sublime_plugin.TextCommand):
+
+    def reorder_list(self, regions):
+        """regions is a list of region of line for ONE list"""
+        lines = {}
+        v = self.view
+        entire_text = ''
+        prev_line = None
+        for region in regions:
+            line = StdClass('line')
+            line.region = region
+            line.text = convert_indentation(self.settings, v.substr(line.region))
+            if line.text == '':
+                break
+            line.indentation = get_indentation(line.text)
+            line.prefix, line.suffix = fix(line.text)
+            if prev_line and line.indentation > prev_line.indentation:
+                lines[line.indentation] = None
+            if lines.get(line.indentation, None) is None:
+                lines[line.indentation] = line.prefix
+            if isinstance(lines[line.indentation], int):
+                entire_text += '{0}{1}.{2}\n'.format(line.indentation * '\t', lines[line.indentation], line.suffix)
+                lines[line.indentation] += 1
+            else:
+                entire_text += '{0}{1}{2}\n'.format(line.indentation * '\t', lines[line.indentation], line.suffix)
+
+            prev_line = line
+
+        replace(v, sublime.Region(regions[0].begin(), regions[-1].end()), entire_text)
+
+    def reorder_lists(self):
+        v = self.view
+        for region in v.sel():
+            scope = v.extract_scope(region.begin())
+            self.reorder_list(v.lines(scope))
+
+    # def insert_new_list_item(self):
+    #     v = self.view
+    #     for region in v.sel():
+
+
+
+    def run(self, edit, action=None):
+        self.settings = self.view.settings()
+        if action is None:
+            return sublime.error_message('the action cannot be None')
+        if not isinstance(action, str):
+            return sublime.error_message('The action must be a string, not a {}'.format(action.__class__.__name__))
         try:
             action_to_run = getattr(self, action)
         except AttributeError:
