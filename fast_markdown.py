@@ -4,6 +4,8 @@ import re
 import sys
 from .rowcol2region import Rowcol2region
 
+LIST_PREFIXES = ['-', '*', '+']
+
 def StdClass(name='Unknown'):
     return type(name.title(), (), {})
 
@@ -49,7 +51,7 @@ def fix(text):
     text = text.strip()
     if not text:
         raise ValueError('No suffix for the line {0!r}'.format(text))
-    if text[0] in ['-', '*', '+']:
+    if text[0] in LIST_PREFIXES:
         return text[0], text[1:]
     elif text.split('.', 1)[0].isdigit():
         return 1, text.split('.', 1)[1]
@@ -211,6 +213,8 @@ class FastMarkdownShitCommand(sublime_plugin.TextCommand):
 
 class FastMarkdownCommand(sublime_plugin.TextCommand):
 
+
+
     def reorder_list(self, regions, current_region):
         """regions is a list of region of line for ONE list"""
         lines = {}
@@ -264,6 +268,7 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
     def insert_new_list_item(self):
         v = self.view
         saver = Rowcol2region(v).save()
+        move = True
         for region in v.sel():
             line = StdClass('line')
             line.region = v.line(region.begin())
@@ -280,12 +285,27 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
             else:
                 is_last_item_of_list = False
 
-            if line.suffix or not is_last_item_of_list:
-                insert(v, line.region.end(), '\n{0} '.format(line.prefix))
-                self.reorder_lists()
+            if len(line.suffix) > 0 and line.suffix[-1] in LIST_PREFIXES + ['#'] and (len(line.suffix) == 1 or line.suffix[-2] == ' '):
+                # cheat the system (:D)
+                if line.suffix[-1] == '#':
+                    line.prefix = '1.' # the number is corrected by reorder_lists()
+                else:
+                    line.prefix = line.suffix[-1]
+                line.indentation += 1
+                replace(v, sublime.Region(line.region.end() - 2, line.region.end()),
+                           '\n{0}{1} '.format(line.indentation * '\t', line.prefix))
+
+            elif line.suffix or not is_last_item_of_list:
+                insert(v, line.region.end(), '\n{0}{1} '.format(line.indentation * '\t', line.prefix))
             elif is_last_item_of_list:
-                replace(v, line.region, '\n')
-            saver.restore()
+                if line.indentation == 0:
+                    replace(v, line.region, '\n')
+                else:
+                    replace(v, line.region, (line.indentation - 1) * '\t' + '- ') #
+                    move = False
+        self.reorder_lists()
+        saver.restore()
+        if move:
             v.run_command('move', {'by': 'lines', 'forward': True})
             v.run_command('move_to', {'to': 'eol'})
 
