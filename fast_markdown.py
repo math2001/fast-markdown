@@ -248,16 +248,18 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
             elif fix(reversed_lines[i-1])[1] != '':
                 entire_text_without_empty_item.append(line)
                 has_seen_a_no_empty_suffix = True
-
         entire_text = '\n'.join(reversed(entire_text_without_empty_item)) + '\n'
 
         replace(v, sublime.Region(regions[0].begin(), regions[-1].end()), entire_text)
 
     def reorder_lists(self):
         v = self.view
+        scopes = v.find_by_selector('meta.paragraph.list')
         for region in v.sel():
-            scope = v.extract_scope(region.begin())
-            self.reorder_list(v.lines(scope), region)
+            for scope in scopes:
+                if scope.contains(region):
+                    self.reorder_list(v.lines(scope), region)
+                    break
 
     def insert_new_list_item(self):
         v = self.view
