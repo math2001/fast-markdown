@@ -2,6 +2,7 @@ import sublime
 import sublime_plugin
 import re
 import sys
+from .rowcol2region import Rowcol2region
 
 def StdClass(name='Unknown'):
     return type(name.title(), (), {})
@@ -43,7 +44,11 @@ def get_indentation(text):
     return indentation
 
 def fix(text):
+    """This function does not fix anything, it just returns
+    a tuple: (prefix, sufix)"""
     text = text.strip()
+    if not text:
+        raise ValueError('No suffix for the line {0!r}'.format(text))
     if text[0] in ['-', '*', '+']:
         return text[0], text[1:]
     elif text.split('.', 1)[0].isdigit():
@@ -206,13 +211,15 @@ class FastMarkdownShitCommand(sublime_plugin.TextCommand):
 
 class FastMarkdownCommand(sublime_plugin.TextCommand):
 
-    def reorder_list(self, regions):
+    def reorder_list(self, regions, current_region):
         """regions is a list of region of line for ONE list"""
         lines = {}
         v = self.view
         entire_text = ''
         prev_line = None
-        for region in regions:
+        last_index = len(regions) - 2
+        point = current_region.begin()
+        for i, region in enumerate(regions):
             line = StdClass('line')
             line.region = region
             line.text = convert_indentation(self.settings, v.substr(line.region))
@@ -225,12 +232,24 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
             if lines.get(line.indentation, None) is None:
                 lines[line.indentation] = line.prefix
             if isinstance(lines[line.indentation], int):
-                entire_text += '{0}{1}.{2}\n'.format(line.indentation * '\t', lines[line.indentation], line.suffix)
+                entire_text += '{0}{1}. {2}\n'.format(line.indentation * '\t', lines[line.indentation], line.suffix.strip())
                 lines[line.indentation] += 1
             else:
-                entire_text += '{0}{1}{2}\n'.format(line.indentation * '\t', lines[line.indentation], line.suffix)
+                entire_text += '{0}{1} {2}\n'.format(line.indentation * '\t', lines[line.indentation], line.suffix.strip())
 
             prev_line = line
+
+        entire_text_without_empty_item = []
+        has_seen_a_no_empty_suffix = False
+        reversed_lines = list(reversed(entire_text.splitlines()))
+        for i, line in enumerate(reversed_lines):
+            if has_seen_a_no_empty_suffix:
+                entire_text_without_empty_item.append(line)
+            elif fix(reversed_lines[i-1])[1] != '':
+                entire_text_without_empty_item.append(line)
+                has_seen_a_no_empty_suffix = True
+
+        entire_text = '\n'.join(reversed(entire_text_without_empty_item)) + '\n'
 
         replace(v, sublime.Region(regions[0].begin(), regions[-1].end()), entire_text)
 
@@ -238,13 +257,35 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
         v = self.view
         for region in v.sel():
             scope = v.extract_scope(region.begin())
-            self.reorder_list(v.lines(scope))
+            self.reorder_list(v.lines(scope), region)
 
-    # def insert_new_list_item(self):
-    #     v = self.view
-    #     for region in v.sel():
+    def insert_new_list_item(self):
+        v = self.view
+        saver = Rowcol2region(v).save()
+        for region in v.sel():
+            line = StdClass('line')
+            line.region = v.line(region.begin())
+            line.row, line.col = v.rowcol(region.begin())
+            line.text = convert_indentation(self.settings, v.substr(line.region))
+            line.prefix, line.suffix = fix(line.text)
+            line.indentation = get_indentation(line.text)
+            if isinstance(line.prefix, int):
+                line.prefix = '{0}.'.format(line.prefix)
+            try:
+                fix(v.substr(v.line(v.text_point(line.row, line.col + 1))))
+            except ValueError:
+                is_last_item_of_list = True
+            else:
+                is_last_item_of_list = False
 
-
+            if line.suffix or not is_last_item_of_list:
+                insert(v, line.region.end(), '\n{0} '.format(line.prefix))
+                self.reorder_lists()
+            elif is_last_item_of_list:
+                replace(v, line.region, '\n')
+            saver.restore()
+            v.run_command('move', {'by': 'lines', 'forward': True})
+            v.run_command('move_to', {'to': 'eol'})
 
     def run(self, edit, action=None):
         self.settings = self.view.settings()

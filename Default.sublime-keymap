@@ -64,9 +64,9 @@
     // delete left right: *|* -> |
     { "keys": ["backspace"], "command": "run_macro_file", "args": { "file": "res://Packages/Default/Delete Left Right.sublime-macro"},
         "context": [
-            { "key": "selector", "operator": "equal", "operand": "text.html.markdown" }
-            , { "key": "following_text", "operator": "regex_contains", "operand": "^\\*" }
-            , { "key": "preceding_text", "operator": "regex_contains", "operand": "\\*$" }
+            { "key": "selector", "operator": "equal", "operand": "text.html.markdown" },
+            { "key": "following_text", "operator": "regex_contains", "operand": "^\\*" },
+            { "key": "preceding_text", "operator": "regex_contains", "operand": "\\*$" }
         ]
     },
 
@@ -81,22 +81,28 @@
                 "match_all": true,
                 "operator": "equal",
                 "operand": "markup.list"
-            }
-            , {
+            },
+            {
                 "key": "selector",
                 "match_all": true,
                 "operator": "equal",
                 "operand": "text.html.markdown"
-            }
-            , {
+            },
+            {
                 "key": "preceding_text",
                 "operator": "regex_match",
                 "operand": "^.+$"
-            }
-            , {
+            },
+            {
                 "key": "following_text",
                 "operator": "regex_match",
                 "operand": "^$"
+            },
+            {
+                "key": "selection_empty",
+                "operator": "equal",
+                "operand": true,
+                "match_all": true
             }
         ]
     },
