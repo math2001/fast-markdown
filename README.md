@@ -2,7 +2,7 @@
 
 **Markdown**. You type some *markdown* all the time. For github, stackoverflow, your readmes, your docs, your blog posts. The list never stops. This is why I created this plugin. It's basically going to make you become faster at typing markdown
 
-It auto insert prefixes in lists (`-`, `*`, `n.`). (reorganize automatically the numbers when you add/remove element). It support nested lists. 
+It auto insert prefixes in lists (`-`, `*`, `n.`). (reorganize automatically the numbers when you add/remove element). It support nested lists.
 
 It also helps with italics and bold (only working with `*` for now).
 
@@ -34,7 +34,7 @@ The first step was just adding `fast-markdown` to the list of available plugin, 
 ## Using the command line
 
 ```
-cd "%APPDATA%\Roaming\Sublime Text 3\Packages"     # on window
+cd "%APPDATA%\Sublime Text 3\Packages"             # on window
 cd ~/Library/Application\ Support/Sublime\ Text\ 3 # on mac
 cd ~/.config/sublime-text-3                        # on linux
 
