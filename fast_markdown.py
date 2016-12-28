@@ -34,7 +34,19 @@ def insert(view, point, text):
 def convert_indentation(settings, text):
     if settings.get('translate_tabs_to_spaces', False) is not True:
         return text
-    return text.replace(' ' * settings.get('tab_size'), '\t')
+    tab_size = settings.get('tab_size')
+    indentation = ''
+    space_nb = 0
+    for char in text:
+        if char == ' ':
+            space_nb += 1
+            if space_nb == tab_size:
+                space_nb = 0
+                indentation += '\t'
+        else:
+            break
+
+    return indentation + text.lstrip()
 
 def get_indentation(text):
     indentation = 0
@@ -171,7 +183,6 @@ class FastMarkdownShitCommand(sublime_plugin.TextCommand):
 
                 if indentations.get(line.indentation, None) is None:
                     indentations[line.indentation] = line.text.lstrip()[0]
-                    print(indentations[line.indentation])
                     if indentations[line.indentation].isdigit():
                         indentations[line.indentation] = 0
                         replace_line(indentations, line)
@@ -212,7 +223,6 @@ class FastMarkdownShitCommand(sublime_plugin.TextCommand):
         action_to_run()
 
 class FastMarkdownCommand(sublime_plugin.TextCommand):
-
 
 
     def reorder_list(self, regions, current_region):
@@ -278,15 +288,19 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
             line.indentation = get_indentation(line.text)
             if isinstance(line.prefix, int):
                 line.prefix = '{0}.'.format(line.prefix)
-            try:
-                fix(v.substr(v.line(v.text_point(line.row, line.col + 1))))
-            except ValueError:
-                is_last_item_of_list = True
+            next_line_text = convert_indentation(self.settings, v.substr(v.line(v.text_point(line.row, line.col + 1))))
+            if get_indentation(next_line_text) >= line.indentation:
+                try:
+                    fix(next_line_text)
+                except ValueError:
+                    is_last_item_of_list = line.suffix == ''
+                else:
+                    is_last_item_of_list = False
             else:
-                is_last_item_of_list = False
+                is_last_item_of_list = line.suffix == ''
 
             if len(line.suffix) > 0 and line.suffix[-1] in LIST_PREFIXES + ['#'] and (len(line.suffix) == 1 or line.suffix[-2] == ' '):
-                # cheat the system (:D)
+                # insert a sub-list
                 if line.suffix[-1] == '#':
                     line.prefix = '1.' # the number is corrected by reorder_lists()
                 else:
@@ -295,14 +309,15 @@ class FastMarkdownCommand(sublime_plugin.TextCommand):
                 replace(v, sublime.Region(line.region.end() - 2, line.region.end()),
                            '\n{0}{1} '.format(line.indentation * '\t', line.prefix))
 
-            elif line.suffix or not is_last_item_of_list:
+            elif line.suffix and not is_last_item_of_list:
                 insert(v, line.region.end(), '\n{0}{1} '.format(line.indentation * '\t', line.prefix))
             elif is_last_item_of_list:
                 if line.indentation == 0:
                     replace(v, line.region, '\n')
                 else:
-                    replace(v, line.region, (line.indentation - 1) * '\t' + '- ') #
+                    replace(v, line.region, (line.indentation - 1) * '\t' + '- ') # the sign is corrected by reorder_lists()
                     move = False
+          
         self.reorder_lists()
         saver.restore()
         if move:
